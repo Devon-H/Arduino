@@ -13,14 +13,14 @@
 Adafruit_SSD1306 display(OLED_RESET);
 
 //Load pins
-const int HX711_dout_1 = 4; //mcu > HX711 no 1 dout pin
-const int HX711_sck_1 = 5; //mcu > HX711 no 1 sck pin
-const int HX711_dout_2 = 6; //mcu > HX711 no 2 dout pin
-const int HX711_sck_2 = 7; //mcu > HX711 no 2 sck pin
+const int HX711_dout_1 = 9; //mcu > HX711 no 1 dout pin
+const int HX711_sck_1 = 10; //mcu > HX711 no 1 sck pin
+const int HX711_dout_2 = 11; //mcu > HX711 no 2 dout pin
+const int HX711_sck_2 = 12; //mcu > HX711 no 2 sck pin
 
 
 //HX711 constructor
-HX711_ADC LoadCell_1(HX711_dout_1, HX711_sck_1);
+HX711_ADC LoadCell_1(HX711_dout_1, HX711_sck_1); //HX711 1
 HX711_ADC LoadCell_2(HX711_dout_2, HX711_sck_2); //HX711 2
 
 const float calibrationValue_1 = 42069; // calibration value load cell 1
@@ -32,14 +32,14 @@ unsigned long t = 0;
 int mpin = 3;
 float mval =  0;
 
-float dutyCycle = 0; 
+float dutyCycle = 0;
 
 //initalize potentiometer pin and value
-int ppin = A3;
+int ppin = A1;
 int pval = 0;
 
 //initialize hall sensor pin
-int hall = 9;
+int hall = 5;
 
 unsigned long initial = 0;
 unsigned long final = 0;
@@ -112,7 +112,7 @@ void loop() {
   const int serialPrintInterval = 0; //increase value to slow down serial print activity
 
   // check for new data/start next conversion:
-  if (LoadCell_1.update() || LoadCell_2.update()) newDataReady = true;
+  if (LoadCell_1.update() && LoadCell_2.update()) newDataReady = true;
   
 
   //get smoothed value from data set
@@ -138,6 +138,30 @@ void loop() {
 
   while(!digitalRead(hall)){ // If this loop is entered, we encountered a magnet.
     
+      static boolean newDataReady = 0;
+  const int serialPrintInterval = 0; //increase value to slow down serial print activity
+
+  // continue load cell checks while in hall sensor loop
+  // check for new data/start next conversion:
+  if (LoadCell_1.update() && LoadCell_2.update()) newDataReady = true;
+  
+
+    //get smoothed value from data set
+    if ((newDataReady)) {
+      if (millis() > t + serialPrintInterval) {
+        float a = LoadCell_1.getData();
+        float b = LoadCell_2.getData();
+        Serial.print(a);
+        Serial.print(",");
+        Serial.print(b);
+        Serial.println(",");
+        
+        newDataReady = 0;
+        t = millis();
+      }
+    }
+  
+    Serial.print("here");
     //keep mapping
     pval = analogRead(ppin);
     mval = map(pval, 0, 1023, 0, 255);
